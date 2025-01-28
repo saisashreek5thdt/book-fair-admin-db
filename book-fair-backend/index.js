@@ -1,4 +1,3 @@
-// api/index.js
 const express = require("express");
 const cors = require("cors");
 const { PrismaClient } = require("@prisma/client");
@@ -9,7 +8,6 @@ require("dotenv").config();
 
 const prisma = new PrismaClient();
 const app = express();
-
 app.use(express.json());
 app.use(cors());
 
@@ -73,4 +71,12 @@ app.get("/users/csv", async (req, res) => {
   }
 });
 
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+
+
+process.on("SIGINT", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
