@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(cors());
 
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET||"mysecret";
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({});
@@ -27,6 +27,9 @@ const authenticate = async (req, res, next) => {
   if (!token) return res.status(401).json({ error: "Access Denied" });
 
   try {
+    console.log("Token received:", token);
+console.log("Secret used:", JWT_SECRET);
+
     const verified = jwt.verify(token, JWT_SECRET);
     req.user = verified;
     next();
