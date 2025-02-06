@@ -74,11 +74,14 @@ router.post("/", upload.single("image"), async (req, res) => {
   }
 });
 
-// **Get All Speakers**
+// **Get All Active Speakers**
 router.get("/", async (req, res) => {
-  const speakers = await prisma.speaker.findMany({ orderBy: { id: "asc" } });
-  res.json(speakers);
-});
+    const speakers = await prisma.speaker.findMany({
+      where: { isActive: true }, // Only fetch active speakers
+      orderBy: { id: "asc" },
+    });
+    res.json(speakers);
+  });
 
 // **Update Speaker**
 router.put("/:id", upload.single("image"), async (req, res) => {
