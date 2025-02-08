@@ -24,4 +24,15 @@ model Speaker {
   imageUrl    String?  // Image stored in Cloudinary
   isActive    Boolean  @default(true) // Active/Inactive
   createdAt   DateTime @default(now())
+  events     Event[]
+}
+
+model Event {
+  id              Int       @id @default(autoincrement())
+  day             String
+  date            DateTime
+  eventName       String
+  eventDescription String
+  isActive        Boolean
+  speakers        Speaker[] 
 }
