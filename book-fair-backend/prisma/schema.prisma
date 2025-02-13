@@ -36,3 +36,11 @@ model Event {
   isActive        Boolean
   speakers        Speaker[] 
 }
+
+model Banner {
+  id        Int      @id @default(autoincrement())
+  text      String?  
+  content   String?  
+  imageUrl  String?  
+  isActive  Boolean  
+}

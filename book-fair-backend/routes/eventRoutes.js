@@ -58,32 +58,39 @@ router.get("/", async (req, res) => {
   }
 });
 
-// **Update Event Schedule**
+// **Update Event Schedule (Partial Update)**
 router.put("/:id", async (req, res) => {
-  const { id } = req.params;
-  const { day, date, eventName, eventDescription, speakerIds, isActive } = req.body;
-
-  try {
-    const eventSchedule = await prisma.event.update({
-      where: { id: parseInt(id) },
-      data: {
-        day,
-        date: date ? new Date(date) : undefined,
-        eventName,
-        eventDescription,
-        isActive: isActive === "true"|| isActive === true,
-        speakers: {
+    const { id } = req.params;
+    const { day, date, eventName, eventDescription, speakerIds, isActive } = req.body;
+  
+    try {
+      const updateData = {};
+  
+      // Update only fields that are provided
+      if (day) updateData.day = day;
+      if (date) updateData.date = new Date(date);
+      if (eventName) updateData.eventName = eventName;
+      if (eventDescription) updateData.eventDescription = eventDescription;
+      if (typeof isActive !== "undefined") updateData.isActive = isActive === "true" || isActive === true;
+      
+      // Update speaker relationships only if provided
+      if (Array.isArray(speakerIds)) {
+        updateData.speakers = {
           set: speakerIds.map(id => ({ id: parseInt(id) })), // Reset speakers with new assignments
-        },
-      },
-    });
-
-    res.json(eventSchedule);
-  } catch (error) {
-    console.error("Error updating event schedule:", error);
-    res.status(500).json({ error: "Failed to update event schedule" });
-  }
-});
+        };
+      }
+  
+      const eventSchedule = await prisma.event.update({
+        where: { id: parseInt(id) },
+        data: updateData,
+      });
+  
+      res.json(eventSchedule);
+    } catch (error) {
+      console.error("Error updating event schedule:", error);
+      res.status(500).json({ error: "Failed to update event schedule" });
+    }
+  });
 
 // **Delete Event Schedule and Maintain Sequential IDs**
 router.delete("/:id", async (req, res) => {
