@@ -44,3 +44,23 @@ model Banner {
   imageUrl  String?  
   isActive  Boolean  
 }
+
+model Publisher {
+  id            Int      @id @default(autoincrement())
+  publisherName String
+  publisherEmail String
+  boothNumber   String
+  logo          String?
+  books         Book[]
+  createdAt     DateTime @default(now())
+}
+
+model Book {
+  id          Int      @id @default(autoincrement())
+  index       Int?
+  title        String
+  publisherId Int
+  publisher   Publisher @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+
+  @@unique([publisherId, index]) // Ensures unique indexing per publisher
+}

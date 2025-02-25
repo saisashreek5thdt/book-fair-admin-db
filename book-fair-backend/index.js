@@ -5,6 +5,7 @@ require("dotenv").config();
 const speakerRoutes = require("./routes/speakerRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const bannerRoutes = require("./routes/bannerRoutes");
+const publisherRoutes=require("./routes/publisherRoutes");
 
 const app = express();
 app.use(express.json());
@@ -16,6 +17,7 @@ const PORT = process.env.PORT || 5000;
 app.use("/speakers", speakerRoutes);
 app.use("/events", eventRoutes);
 app.use("/banners", bannerRoutes);
+app.use("/publishers", publisherRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
