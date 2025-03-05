@@ -31,4 +31,8 @@ app.use("/teams", teamsRoutes);
 // app.listen(PORT, () => {
 //   console.log(`Server running on http://localhost:${PORT}`);
 // });
+app.get("/", (req, res) => {
+    res.send("Welcome to the Book Fair API! The server is running successfully.");
+  });
+  
 module.exports = app;
