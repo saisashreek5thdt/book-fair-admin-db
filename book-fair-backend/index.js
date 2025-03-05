@@ -28,6 +28,7 @@ app.use("/gallery", galleryRoutes);
 app.use("/partners", partnersRoutes);
 app.use("/teams", teamsRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server running on http://localhost:${PORT}`);
+// });
+module.exports = app;
