@@ -1,17 +1,16 @@
 const express = require("express");
 const multer = require("multer");
-const cloudinary = require("../cloudinary");
 const { PrismaClient } = require("@prisma/client");
 const sharp = require("sharp");
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Set up Multer for 5 MB limit (store file in memory, not disk)
+// Set up Multer for in-memory storage (5MB limit)
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB file size limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max file size
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) {
       return cb(new Error("Only image files are allowed!"));
@@ -28,7 +27,7 @@ async function compressImage(inputBuffer) {
     .toBuffer(); // Return buffer instead of saving to file
 }
 
-// **Get Next ID**
+// **Get Next ID (Sequential)**
 async function getNextSpeakerId() {
   const lastSpeaker = await prisma.speaker.findFirst({
     orderBy: { id: "desc" },
@@ -37,27 +36,17 @@ async function getNextSpeakerId() {
   return lastSpeaker ? lastSpeaker.id + 1 : 1; // If no speakers exist, start from 1
 }
 
-// **Add Speaker**
+// **Add Speaker (Image Stored in Database)**
 router.post("/", upload.single("image"), async (req, res) => {
   const { name, designation, note, isActive } = req.body;
-  let imageUrl = null;
+  let imageBuffer = null;
 
   if (req.file) {
     try {
-      const compressedBuffer = await compressImage(req.file.buffer);
-
-      // Upload compressed buffer to Cloudinary
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: "Speaker", resource_type: "image" },
-          (error, result) => (error ? reject(error) : resolve(result))
-        ).end(compressedBuffer);
-      });
-
-      imageUrl = result.secure_url;
+      imageBuffer = await compressImage(req.file.buffer);
     } catch (error) {
-      console.error("Image compression or upload failed:", error);
-      return res.status(500).json({ error: "Image compression or upload failed" });
+      console.error("Image compression failed:", error);
+      return res.status(500).json({ error: "Image compression failed" });
     }
   }
 
@@ -65,7 +54,14 @@ router.post("/", upload.single("image"), async (req, res) => {
     const nextId = await getNextSpeakerId();
 
     const speaker = await prisma.speaker.create({
-      data: { id: nextId, name, designation, note, imageUrl, isActive: isActive === "true" },
+      data: {
+        id: nextId,
+        name,
+        designation,
+        note,
+        image: imageBuffer, // Store binary data
+        isActive: isActive === "true",
+      },
     });
 
     res.status(201).json(speaker);
@@ -74,14 +70,25 @@ router.post("/", upload.single("image"), async (req, res) => {
   }
 });
 
-// **Get All Active Speakers**
+// **Get All Active Speakers (Convert Image to Base64)**
 router.get("/", async (req, res) => {
+  try {
     const speakers = await prisma.speaker.findMany({
-      where: { isActive: true }, // Only fetch active speakers
+      where: { isActive: true },
       orderBy: { id: "asc" },
     });
-    res.json(speakers);
-  });
+
+    // Convert image buffer to Base64
+    const formattedSpeakers = speakers.map(speaker => ({
+      ...speaker,
+      image: speaker.image ? `data:image/jpeg;base64,${speaker.image.toString("base64")}` : null,
+    }));
+
+    res.json(formattedSpeakers);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching speakers" });
+  }
+});
 
 // **Update Speaker**
 router.put("/:id", upload.single("image"), async (req, res) => {
@@ -96,19 +103,9 @@ router.put("/:id", upload.single("image"), async (req, res) => {
 
   if (req.file) {
     try {
-      const compressedBuffer = await compressImage(req.file.buffer);
-
-      // Upload compressed buffer to Cloudinary
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: "Speaker", resource_type: "image" },
-          (error, result) => (error ? reject(error) : resolve(result))
-        ).end(compressedBuffer);
-      });
-
-      updateData.imageUrl = result.secure_url;
+      updateData.image = await compressImage(req.file.buffer);
     } catch (error) {
-      return res.status(500).json({ error: "Image compression or upload failed" });
+      return res.status(500).json({ error: "Image compression failed" });
     }
   }
 

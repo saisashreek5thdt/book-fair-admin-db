@@ -1,7 +1,6 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const multer = require("multer");
-const cloudinary = require("../cloudinary");
 const sharp = require("sharp");
 
 const router = express.Router();
@@ -20,7 +19,7 @@ const upload = multer({
   },
 });
 
-// Compress image before uploading
+// Compress image before storing in the database
 async function compressImage(inputBuffer) {
   return await sharp(inputBuffer)
     .resize({ width: 1200 }) // Max width 1200px
@@ -35,14 +34,7 @@ router.post("/", upload.single("logo"), async (req, res) => {
     let uploadedImage = null;
 
     if (req.file) {
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: "publisher_logo", resource_type: "image" },
-          (error, result) => (error ? reject(error) : resolve(result))
-        ).end(req.file.buffer);
-      });
-
-      uploadedImage = result.secure_url;
+      uploadedImage = await compressImage(req.file.buffer);
     }
 
     // Get next sequential publisher ID

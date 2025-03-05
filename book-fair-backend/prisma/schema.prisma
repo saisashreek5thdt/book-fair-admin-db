@@ -21,46 +21,73 @@ model Speaker {
   name        String
   designation String
   note        String?
-  imageUrl    String?  // Image stored in Cloudinary
-  isActive    Boolean  @default(true) // Active/Inactive
+  image       Bytes?   // Changed from String (Cloudinary URL) to BLOB
+  isActive    Boolean  @default(true) 
   createdAt   DateTime @default(now())
-  events     Event[]
+  events      Event[]
 }
 
 model Event {
-  id              Int       @id @default(autoincrement())
-  day             String
-  date            DateTime
-  eventName       String
+  id               Int       @id @default(autoincrement())
+  day              String
+  date             DateTime
+  eventName        String
   eventDescription String
-  isActive        Boolean
-  speakers        Speaker[] 
+  isActive         Boolean  @default(true)
+  speakers         Speaker[]
 }
 
 model Banner {
-  id        Int      @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   text      String?  
   content   String?  
-  imageUrl  String?  
-  isActive  Boolean  
+  image     Bytes?  // Changed from String (Cloudinary URL) to BLOB
+  isActive  Boolean  @default(true)
 }
 
 model Publisher {
-  id            Int      @id @default(autoincrement())
-  publisherName String
+  id             Int      @id @default(autoincrement())
+  publisherName  String
   publisherEmail String
-  boothNumber   String
-  logo          String?
-  books         Book[]
-  createdAt     DateTime @default(now())
+  boothNumber    String
+  logo           Bytes?   // Changed from String (Cloudinary URL) to BLOB
+  books          Book[]
+  createdAt      DateTime @default(now())
 }
 
 model Book {
   id          Int      @id @default(autoincrement())
   index       Int?
-  title        String
+  title       String
   publisherId Int
   publisher   Publisher @relation(fields: [publisherId], references: [id], onDelete: Cascade)
 
   @@unique([publisherId, index]) // Ensures unique indexing per publisher
+}
+
+model Gallery {
+  id    Int    @id @default(autoincrement())
+  image Bytes  // Stores bulk images as BLOB
+}
+
+model Team {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String
+  shortName   String
+  image       Bytes  // Stores team member images as BLOB
+}
+
+model Partner {
+  id    Int    @id @default(autoincrement())
+  image Bytes  // Stores partner images as BLOB
+}
+
+model AboutEvent {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  location    String
+  date        DateTime
+  video       Bytes?   // Store video as binary data (BLOB)
 }

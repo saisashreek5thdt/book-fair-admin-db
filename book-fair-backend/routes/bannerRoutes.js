@@ -1,7 +1,6 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const multer = require("multer");
-const cloudinary = require("../cloudinary");
 const sharp = require("sharp");
 
 const router = express.Router();
@@ -52,24 +51,14 @@ async function resetBannerIds() {
 // **Upload Banner Image and Create Banner**
 router.post("/", upload.single("image"), async (req, res) => {
   const { text, content, isActive } = req.body;
-  let imageUrl = null;
+  let imageBuffer = null;
 
   if (req.file) {
     try {
-      const compressedBuffer = await compressImage(req.file.buffer);
-
-      // Upload compressed image to Cloudinary
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: "Banners", resource_type: "image" },
-          (error, result) => (error ? reject(error) : resolve(result))
-        ).end(compressedBuffer);
-      });
-
-      imageUrl = result.secure_url;
+      imageBuffer = await compressImage(req.file.buffer);
     } catch (error) {
-      console.error("Image compression or upload failed:", error);
-      return res.status(500).json({ error: "Image upload failed" });
+      console.error("Image compression failed:", error);
+      return res.status(500).json({ error: "Image processing failed" });
     }
   }
 
@@ -81,7 +70,7 @@ router.post("/", upload.single("image"), async (req, res) => {
         id: nextId,
         text: text || null,
         content: content || null,
-        imageUrl: imageUrl || null,
+        image: imageBuffer || null,
         isActive: isActive === "true" || isActive === true,
       },
     });
@@ -120,20 +109,10 @@ router.put("/:id", upload.single("image"), async (req, res) => {
 
   if (req.file) {
     try {
-      const compressedBuffer = await compressImage(req.file.buffer);
-
-      // Upload compressed image to Cloudinary
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: "Banners", resource_type: "image" },
-          (error, result) => (error ? reject(error) : resolve(result))
-        ).end(compressedBuffer);
-      });
-
-      updateData.imageUrl = result.secure_url;
+      updateData.image = await compressImage(req.file.buffer);
     } catch (error) {
-      console.error("Image compression or upload failed:", error);
-      return res.status(500).json({ error: "Image upload failed" });
+      console.error("Image compression failed:", error);
+      return res.status(500).json({ error: "Image processing failed" });
     }
   }
 
