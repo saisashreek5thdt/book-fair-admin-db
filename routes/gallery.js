@@ -25,10 +25,14 @@ router.post("/", upload.array("images", 10), async (req, res) => {
       return res.status(400).json({ error: "No images uploaded" });
     }
 
+    // Get next ID (sequential)
+    const lastImage = await prisma.gallery.findFirst({ orderBy: { id: "desc" } });
+    let nextId = lastImage ? lastImage.id + 1 : 1;
+
     const imageData = await Promise.all(
-      req.files.map(async (file) => {
+      req.files.map(async (file, index) => {
         const compressedBuffer = await compressImage(file.buffer);
-        return { image: compressedBuffer };
+        return { id: nextId + index, image: compressedBuffer };
       })
     );
 
@@ -43,7 +47,7 @@ router.post("/", upload.array("images", 10), async (req, res) => {
 // **Get All Gallery Images (Convert BLOB to Base64)**
 router.get("/", async (req, res) => {
   try {
-    const images = await prisma.gallery.findMany();
+    const images = await prisma.gallery.findMany({ orderBy: { id: "asc" } });
     const formattedImages = images.map((img) => ({
       id: img.id,
       image: img.image ? `data:image/jpeg;base64,${img.image.toString("base64")}` : null,
@@ -52,6 +56,51 @@ router.get("/", async (req, res) => {
     res.json(formattedImages);
   } catch (error) {
     res.status(500).json({ error: "Error fetching gallery images" });
+  }
+});
+
+// **Update a Specific Image**
+router.put("/:id", upload.single("image"), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No image uploaded" });
+    }
+
+    const compressedBuffer = await compressImage(req.file.buffer);
+
+    await prisma.gallery.update({
+      where: { id: parseInt(id) },
+      data: { image: compressedBuffer },
+    });
+
+    res.json({ message: "Image updated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Error updating image" });
+  }
+});
+
+// **Delete a Specific Image & Reset IDs**
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.gallery.delete({ where: { id: parseInt(id) } });
+
+    // Reorder IDs sequentially
+    const images = await prisma.gallery.findMany({ orderBy: { id: "asc" } });
+
+    for (let i = 0; i < images.length; i++) {
+      await prisma.gallery.update({
+        where: { id: images[i].id },
+        data: { id: i + 1 },
+      });
+    }
+
+    res.json({ message: "Image deleted and IDs reset successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Error deleting image" });
   }
 });
 
