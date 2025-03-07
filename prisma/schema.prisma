@@ -49,7 +49,7 @@ model Publisher {
   id             Int      @id @default(autoincrement())
   publisherName  String
   publisherEmail String
-  boothNumber    String[]
+  boothNumbers   String[]
   logo           Bytes?   // Changed from String (Cloudinary URL) to BLOB
   books          Book[]
   createdAt      DateTime @default(now())
