@@ -27,15 +27,41 @@ async function compressImage(inputBuffer) {
     .toBuffer();
 }
 
-// **Create a Publisher (Ensuring Sequential ID)**
+// **Fetch All Publishers with Books**
+router.get("/", async (req, res) => {
+  try {
+    const publishers = await prisma.publisher.findMany({
+      include: {
+        books: {
+          select: {
+            id: true,
+            index: true,
+            title: true,
+          },
+        },
+      },
+      orderBy: { id: "asc" },
+    });
+
+    res.json(publishers);
+  } catch (error) {
+    console.error("Error fetching publishers:", error);
+    res.status(500).json({ error: "Failed to fetch publishers" });
+  }
+});
+
+// **Create a Publisher with Multiple Booth Numbers**
 router.post("/", upload.single("logo"), async (req, res) => {
   try {
-    const { publisherName, publisherEmail, boothNumber, books } = req.body;
+    const { publisherName, publisherEmail, boothNumbers, books } = req.body;
     let uploadedImage = null;
 
     if (req.file) {
       uploadedImage = await compressImage(req.file.buffer);
     }
+
+    // Convert `boothNumbers` to an array (handle both JSON string & array input)
+    const boothNumbersArray = Array.isArray(boothNumbers) ? boothNumbers : JSON.parse(boothNumbers);
 
     // Get next sequential publisher ID
     const lastPublisher = await prisma.publisher.findFirst({
@@ -57,7 +83,7 @@ router.post("/", upload.single("logo"), async (req, res) => {
         id: nextPublisherId,
         publisherName,
         publisherEmail,
-        boothNumber,
+        boothNumbers: boothNumbersArray, // Store as array
         logo: uploadedImage,
         books: {
           create: bookArray.map((title, index) => ({
