@@ -45,7 +45,7 @@ router.get("/", async (req, res) => {
           select: {
             id: true,
             name: true,
-            imageUrl: true,
+            image: true,
           },
         },
       },
