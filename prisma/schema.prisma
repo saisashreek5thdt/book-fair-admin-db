@@ -52,6 +52,7 @@ model Publisher {
   boothNumbers   String[]
   logo           Bytes?   // Changed from String (Cloudinary URL) to BLOB
   books          Book[]
+  carts          Cart[] 
   createdAt      DateTime @default(now())
 }
 
@@ -90,4 +91,15 @@ model AboutEvent {
   location    String
   date        DateTime
   video       Bytes?   // Store video as binary data (BLOB)
+}
+
+model Cart {
+  id          Int      @id @default(autoincrement())
+  userName    String
+  userEmail   String
+  books       Json
+  boothNumber String
+  publisherId Int
+  publisher   Publisher @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
 }
